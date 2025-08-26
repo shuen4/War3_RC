@@ -549,7 +549,7 @@ void init_server() {
                 // tell everyone(include ourself) we are reconnected
                 // and time taken for this operation
                 uint32_t end = GetTickCount() - start;
-                if (send_w3_chat_to_host(server, (std::string("Reconnected (") + std::to_string(end) + "ms)").c_str(), local_player_id) == SOCKET_ERROR) {
+                if (send_w3_chat_to_host(server, (std::string("Reconnected (") + std::to_string(end) + "ms)").c_str(), local_player_id, true) == SOCKET_ERROR) {
                     MessageBoxA(NULL, "send chat to server failed", "Local server", MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
                     exit(1);
                 }
