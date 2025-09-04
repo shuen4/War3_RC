@@ -88,8 +88,11 @@ namespace client {
     uint32_t(__thiscall* CGameWar3_GetPlayer)(uint32_t _this, uint32_t player_id);
     void(__thiscall* CSelectionWar3_Realize)(uint32_t _this, uint32_t additive);
     void(__fastcall* RefreshUI)(BOOL);
-    void(__thiscall* CSelectionWar3_ClearSelectionLocal)(uint32_t _this, uint32_t player_id, uint32_t);
-    void(__thiscall* CSelectionWar3_AddLocal)(uint32_t _this, uint32_t unit, uint32_t player_id, uint32_t, uint32_t, uint32_t);
+    void(__thiscall* CSelectionWar3_ClearSelectionLocal)(uint32_t _this, uint32_t playerID, uint32_t);
+    void(__thiscall* CSelectionWar3_AddLocal)(uint32_t _this, uint32_t unit, uint32_t playerID, uint32_t, uint32_t, uint32_t);
+    void(__thiscall* CScriptDialogWar3_Show)(uint32_t _this, uint32_t flag);
+    void(__thiscall* CDialogButton_DispatchSyncClick)(uint32_t _this, uint32_t dialog, uint32_t playerID);
+    void(__thiscall* CScriptDialogWar3_DispatchSyncClick)(uint32_t _this, uint32_t dialog_button, uint32_t playerID);
     uint32_t* CGameWar3;
     uint32_t CNetData_offset_viewSpeedMultiplier;
     uint32_t NetClient_offset_turnRecycler;
@@ -394,6 +397,24 @@ namespace client {
         }
         return real_CGlueMgr_SetGlueScreen(a1, a2);
     }
+
+    void HideDialog(uint32_t dialog, uint16_t playerID) {
+        using namespace client;
+        if (rc_event && ReadMemory<uint16_t>(*CGameWar3 + 0x28) == playerID)
+            CScriptDialogWar3_Show(dialog, false);
+    }
+
+    void(__thiscall* real_CDialogButton_DispatchSyncClick)(uint32_t _this, uint32_t dialog, uint32_t playerID);
+    void __fastcall fake_CDialogButton_DispatchSyncClick(uint32_t _this, uint32_t, uint32_t dialog, uint32_t playerID) {
+        HideDialog(dialog, playerID);
+        return real_CDialogButton_DispatchSyncClick(_this, dialog, playerID);
+    }
+
+    void(__thiscall* real_CScriptDialogWar3_DispatchSyncClick)(uint32_t _this, uint32_t dialog_button, uint32_t playerID);
+    void __fastcall fake_CScriptDialogWar3_DispatchSyncClick(uint32_t _this, uint32_t, uint32_t dialog_button, uint32_t playerID) {
+        HideDialog(_this, playerID);
+        return real_CScriptDialogWar3_DispatchSyncClick(_this, dialog_button, playerID);
+    }
 }
 #pragma endregion
 
@@ -427,6 +448,9 @@ void init_game() {
         WriteMemory((uint32_t)&RefreshUI                                , base + 0x332700);
         WriteMemory((uint32_t)&CSelectionWar3_ClearSelectionLocal       , base + 0x424EF0);
         WriteMemory((uint32_t)&CSelectionWar3_AddLocal                  , base + 0x424B80);
+        WriteMemory((uint32_t)&CScriptDialogWar3_Show                   , base + 0x3E12D0);
+        WriteMemory((uint32_t)&CDialogButton_DispatchSyncClick          , base + 0x3E8A40);
+        WriteMemory((uint32_t)&CScriptDialogWar3_DispatchSyncClick      , base + 0x3E8AE0);
         CNetData_offset_viewSpeedMultiplier                             = 0x22B4;
         NetClient_offset_turnRecycler                                   = 0x1E8;
         NetProvider_offset_maxGames                                     = 0x618;
@@ -457,6 +481,9 @@ void init_game() {
         WriteMemory((uint32_t)&RefreshUI                                , base + 0x3599F0);
         WriteMemory((uint32_t)&CSelectionWar3_ClearSelectionLocal       , base + 0x271AB0);
         WriteMemory((uint32_t)&CSelectionWar3_AddLocal                  , base + 0x26FF80);
+        WriteMemory((uint32_t)&CScriptDialogWar3_Show                   , base + 0x22BE40);
+        WriteMemory((uint32_t)&CDialogButton_DispatchSyncClick          , base + 0x2108B0);
+        WriteMemory((uint32_t)&CScriptDialogWar3_DispatchSyncClick      , base + 0x2109F0);
         CNetData_offset_viewSpeedMultiplier                             = 0x22B4;
         NetClient_offset_turnRecycler                                   = 0x1E8;
         NetProvider_offset_maxGames                                     = 0x618;
@@ -487,6 +514,9 @@ void init_game() {
         WriteMemory((uint32_t)&RefreshUI                                , base + 0x3AB2A0);
         WriteMemory((uint32_t)&CSelectionWar3_ClearSelectionLocal       , base + 0x2C1BD0);
         WriteMemory((uint32_t)&CSelectionWar3_AddLocal                  , base + 0x2C0090);
+        WriteMemory((uint32_t)&CScriptDialogWar3_Show                   , base + 0x27BF30);
+        WriteMemory((uint32_t)&CDialogButton_DispatchSyncClick          , base + 0x260B50);
+        WriteMemory((uint32_t)&CScriptDialogWar3_DispatchSyncClick      , base + 0x260C90);
         CNetData_offset_viewSpeedMultiplier                             = 0x24F4;
         NetClient_offset_turnRecycler                                   = 0x2A8;
         NetProvider_offset_maxGames                                     = 0x514;
@@ -557,6 +587,10 @@ void init_game() {
         DetourAttach(&(PVOID&)real_CNetData_OnIdle, fake_CNetData_OnIdle);
         WriteMemory((uint32_t)&real_CGlueMgr_SetGlueScreen, CGlueMgr_SetGlueScreen);
         DetourAttach(&(PVOID&)real_CGlueMgr_SetGlueScreen, fake_CGlueMgr_SetGlueScreen);
+        WriteMemory((uint32_t)&real_CDialogButton_DispatchSyncClick, CDialogButton_DispatchSyncClick);
+        DetourAttach(&(PVOID&)real_CDialogButton_DispatchSyncClick, fake_CDialogButton_DispatchSyncClick);
+        WriteMemory((uint32_t)&real_CScriptDialogWar3_DispatchSyncClick, CScriptDialogWar3_DispatchSyncClick);
+        DetourAttach(&(PVOID&)real_CScriptDialogWar3_DispatchSyncClick, fake_CScriptDialogWar3_DispatchSyncClick);
         switch (version) {
         case VERSION::V1_26_0_6401:
             WriteMemoryEx<uint8_t>(base + 0x553626, 0xEB); // process up to 4000ms
